@@ -13,21 +13,19 @@
 #include "diskio.h"		/* FatFs lower layer API */
 #include "mruby.h"
 
-extern int mocloudos_get_disk_fd(int pdrv);
-extern int mocloudos_disk_status(int pdrv, struct stat *buf); 
-extern int mocloudos_disk_read(int pdrv, uint8_t *buff, uint32_t sector, uint32_t count); 
-extern int mocloudos_disk_write(int pdrv, uint8_t *buff, uint32_t sector, uint32_t count); 
+extern int mocloudos_disk_status(int blk_id, struct stat *buf); 
+extern int mocloudos_disk_read(int blk_id, uint8_t *buff, uint32_t sector, uint32_t count); 
+extern int mocloudos_disk_write(int blk_id, uint8_t *buff, uint32_t sector, uint32_t count); 
 
 extern void printk(const char* fmt, ...);
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_initialize (
-	BYTE pdrv				/* Physical drive nmuber (0..) */
-)
+/* blk_id : Physical drive nmuber (0..) */
+DSTATUS disk_initialize (BYTE blk_id)
 {
-	return disk_status(pdrv);
+	return disk_status(blk_id);
 }
 
 
@@ -36,14 +34,13 @@ DSTATUS disk_initialize (
 /* Get Disk Status                                                       */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive nmuber (0..) */
-)
+/* blk_id : Physical drive nmuber (0..) */
+DSTATUS disk_status (BYTE blk_id)
 {
 	struct stat buf;
 	DSTATUS status;
 
-	mocloudos_disk_status((int)pdrv, &buf);
+	mocloudos_disk_status((int)blk_id, &buf);
 	if ((buf.st_mode & 0222) == 0) {
 		status = STA_PROTECT;
 	} else {
@@ -58,16 +55,15 @@ DSTATUS disk_status (
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
 
-DRESULT disk_read (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE *buff,		/* Data buffer to store read data */
-	DWORD sector,	/* Sector address (LBA) */
-	UINT count		/* Number of sectors to read (1..128) */
-)
+/* blk_id   : Physical drive nmuber (0..) */
+/* buff     : Data buffer to store read data */
+/* sector   : Sector address (LBA) */
+/* count    : Number of sectors to read (1..128) */
+DRESULT disk_read (BYTE blk_id, BYTE *buff, DWORD sector,  UINT count)
 {
 	DRESULT res;
 
-	if (mocloudos_disk_read((int) pdrv, (uint8_t *)buff, (uint32_t) sector, (uint32_t) count) >= 0) {
+	if (mocloudos_disk_read((int) blk_id, (uint8_t *)buff, (uint32_t) sector, (uint32_t) count) >= 0) {
 		res = 0;
 	} else {
 		res = RES_PARERR;
@@ -83,16 +79,15 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 
 #if _USE_WRITE
-DRESULT disk_write (
-	BYTE pdrv,			/* Physical drive nmuber (0..) */
-	const BYTE *buff,	/* Data to be written */
-	DWORD sector,		/* Sector address (LBA) */
-	UINT count			/* Number of sectors to write (1..128) */
-)
+/* blk_id   : Physical drive nmuber (0..) */
+/* buff     : Data to be written */
+/* sector   : Sector address (LBA) */
+/* count    : Number of sectors to write (1..128) */
+DRESULT disk_write (BYTE blk_id, const BYTE *buff, DWORD sector, UINT count)
 {
 	DRESULT res;
 
-	if (mocloudos_disk_write((int) pdrv, (uint8_t *)buff, (uint32_t) sector, (uint32_t) count) >= 0) {
+	if (mocloudos_disk_write((int) blk_id, (uint8_t *)buff, (uint32_t) sector, (uint32_t) count) >= 0) {
 		res = 0;
 	} else {
 		res = RES_PARERR;
@@ -110,24 +105,24 @@ printk("disk_write %d\n", res);
 
 #if _USE_IOCTL
 DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
+	BYTE blk_id,		/* Physical drive nmuber (0..) */
 	BYTE cmd,		/* Control code */
 	void *buff		/* Buffer to send/receive control data */
 )
 {
 	DRESULT res;
 	struct stat buf;
-	int fd = mocloudos_get_disk_fd(pdrv);
+	int disk_fd = mocloudos_get_disk_fd(blk_id);
 
 	if (cmd == CTRL_SYNC) {
 	  /* do nothing */
 	  res = RES_OK;
 	} else if (cmd == GET_SECTOR_COUNT) {
-	  (void) fstat(fd, &buf);
+	  (void) fstat(disk_fd, &buf);
 	  *((DWORD*)buff) = buf.st_size / buf.st_blksize;
 	  res = RES_OK;
 	} else if (cmd == GET_SECTOR_SIZE) {
-	  (void) fstat(fd, &buf);
+	  (void) fstat(disk_fd, &buf);
 	  *((WORD*)buff) = buf.st_blksize;
 	  res = RES_OK;
 	} else if (cmd == GET_BLOCK_SIZE) {

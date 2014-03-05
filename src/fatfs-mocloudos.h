@@ -19,13 +19,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
  * DEALINGS IN THE SOFTWARE.
  */
-#include <os.h>
-#include <xmalloc.h>
-#include <console.h>
-#include <netfront.h>
-#include <lwip/api.h>
-#include <mini-os/blkfront.h>
+#ifndef MRBGEM_FATTS_MOCLOUDOS_
+#define MRBGEM_FATTS_MOCLOUDOS_
 
-#include <stdlib.h>
-#include <string.h>
+extern int mocloudos_get_disk_fd(int blk_id);
 
+#endif
