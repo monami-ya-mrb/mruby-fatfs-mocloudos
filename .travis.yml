@@ -1,3 +1,4 @@
+sudo: false
 env:
   matrix:
   - MRUBY_REPO=https://github.com/mruby/mruby.git MRUBY_BRANCH=master
